@@ -4,11 +4,12 @@
     Communication via 3 digital outputs (3-bit binary encoding)
 	
 	if towerscript == nil then
-		towerscript = require "mach4_rgb_led_control" 
+		towerscript = require "towerscript" 
 	end
 
 	towerscript.PLCScript()
 --]]
+
 local towerscript = {}
 -- Configuration
 -- Define which outputs to use (change these to match your setup)
@@ -186,6 +187,7 @@ end
 if (mc.mcInEditor() == 1) then
 	towerscript.PLCScript()
 end
+
 
  return towerscript
  
