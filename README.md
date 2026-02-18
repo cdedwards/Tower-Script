@@ -15,7 +15,7 @@ Edit the ino and select brightness as well as number of led's.
 
 ```
 if towerscript == nil then
-	towerscript = require "towerscript" 
+	towerscript = require "towerscript" -- Load's towerscript.lua from a path. probably C:\Mach4\Modules
 end
 towerscript.PLCScript()
 ```
