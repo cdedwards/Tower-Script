@@ -20,4 +20,8 @@ end
 towerscript.PLCScript()
 ```
 
+goto your Mach Devices page (ESS) and setup 3 output pins and enable those outputs ( output 5, 6, 7 for me )
+Then within Mach4/MachPro settings, setup those outputs as well.
+
+
  
