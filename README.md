@@ -17,7 +17,7 @@ Edit the ino and select brightness as well as number of led's.
 if towerscript == nil then
 	towerscript = require "towerscript" 
 end
-towerscript.PLC
+towerscript.PLC()
 ```
 
  
