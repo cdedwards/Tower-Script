@@ -13,12 +13,11 @@ Edit the ino and select brightness as well as number of led's.
  Under Properties select events.
  Edit the PLC script and add the following 4 lines
 
-
-
+```
 if towerscript == nil then
 	towerscript = require "towerscript" 
 end
 towerscript.PLC
-
+```
 
  
