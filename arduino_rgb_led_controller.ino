@@ -136,10 +136,7 @@ void readInputs() {
 
 
   uint8_t newMode = bit0 | bit1 << 1 | bit2 << 2;
-Serial.print("newMode = "); Serial.print((int)newMode);
-Serial.print("  bit0 = "); Serial.print((int)bit0);
-Serial.print("  bit1 = "); Serial.print((int)bit1);
-Serial.print("  bit2 = "); Serial.println((int)bit2);
+
   // Update mode if changed
   if (newMode != currentMode) {
 
