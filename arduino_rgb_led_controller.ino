@@ -67,6 +67,18 @@ const uint8_t modePatterns[8] = {
   4   // MODE_ESTOP - Strobe (red/white flash) - MAXIMUM ATTENTION!
 };
 
+#if 0
+typedef void solidColor(Color);
+typedef void chase(Color);
+typedef void pulse(Color);
+typedef void blink(Color);
+typedef void strobe(Color);
+
+typedef void (*PatternFunc)(Color);
+const PatternFunc patternFunctions[] = { solidColor, chase, pulse, blink, strobe };
+#endif 
+
+
 // Pattern types
 #define PATTERN_SOLID     0
 #define PATTERN_CHASE     1
@@ -77,10 +89,9 @@ const uint8_t modePatterns[8] = {
 // LED array
 CRGB leds[NUM_LEDS];
 
-char buf[255];
 // Current state
 uint8_t currentMode = MODE_OFF;
-uint8_t lastMode = 255;  // Force initial update
+
 
 // Animation variables
 unsigned long lastUpdate = 0;
@@ -88,10 +99,11 @@ uint8_t animationStep = 0;
 uint8_t hue = 0;
 
 void setup() {
+  Serial.begin(115200);
   // Initialize input pins
-  pinMode(INPUT_BIT0, INPUT);
-  pinMode(INPUT_BIT1, INPUT);
-  pinMode(INPUT_BIT2, INPUT);
+  pinMode(INPUT_BIT0, INPUT_PULLUP);
+  pinMode(INPUT_BIT1, INPUT_PULLUP);
+  pinMode(INPUT_BIT2, INPUT_PULLUP);
   
   // Initialize LED strip
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
@@ -103,7 +115,7 @@ void setup() {
   
   // Startup animation
   startupAnimation();
-  Serial.begin(115200);
+
   
 }
 
@@ -114,24 +126,23 @@ void loop() {
   // Update LED animation
   updateLEDs();
   
-  // Small delay
-  delay(10);
 }
 
 // Read 3-bit binary input and decode to mode
 void readInputs() {
-  uint8_t bit0 = digitalRead(INPUT_BIT0);
-  uint8_t bit1 = digitalRead(INPUT_BIT1);
-  uint8_t bit2 = digitalRead(INPUT_BIT2);
-  
-  // Decode 3-bit binary to mode number (0-7)
-  uint8_t newMode = bit0 | (bit1 << 1) | (bit2 << 2);
+  uint8_t bit0 = digitalRead(INPUT_BIT0) ? 1 : 0;
+  uint8_t bit1 = digitalRead(INPUT_BIT1) ? 1 : 0;
+  uint8_t bit2 = digitalRead(INPUT_BIT2) ? 1 : 0;
 
- 
+
+  uint8_t newMode = bit0 | bit1 << 1 | bit2 << 2;
+Serial.print("newMode = "); Serial.print((int)newMode);
+Serial.print("  bit0 = "); Serial.print((int)bit0);
+Serial.print("  bit1 = "); Serial.print((int)bit1);
+Serial.print("  bit2 = "); Serial.println((int)bit2);
   // Update mode if changed
   if (newMode != currentMode) {
-     sprintf(buf, "newMode = %i  CurrentMode = %i  bit0 = %i  bit1 = %i  bit2 = %i", newMode, currentMode, bit0, bit1, bit2);
-     Serial.println(buf);
+
     currentMode = newMode;
     animationStep = 0;  // Reset animation when mode changes
   }
@@ -205,8 +216,12 @@ void chase(Color color) {
   fadeToBlackBy(leds, NUM_LEDS, 64);
   
   uint8_t pos = animationStep % NUM_LEDS;
+ /*
   leds[pos] = CRGB(color.r, color.g, color.b);
-  
+  leds[pos] = CRGB(color.r, color.g, color.b);
+ */
+  leds[(pos - 1 + NUM_LEDS) % NUM_LEDS] = CRGB(color.r/2, color.g/2, color.b/2);
+  leds[(pos - 2 + NUM_LEDS) % NUM_LEDS] = CRGB(color.r/4, color.g/4, color.b/4);
   // Add trailing LEDs
   if (pos > 0) leds[pos - 1] = CRGB(color.r / 2, color.g / 2, color.b / 2);
   if (pos > 1) leds[pos - 2] = CRGB(color.r / 4, color.g / 4, color.b / 4);
@@ -228,9 +243,9 @@ void blink(Color color) {
   if ((animationStep % 2) == 0) {
     CRGB ledColor = CRGB(color.r, color.g, color.b);
     fill_solid(leds, NUM_LEDS, ledColor);
-  } else {
-    FastLED.clear();
-  }
+  } else 
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+
 }
 
 void strobe(Color color) {
