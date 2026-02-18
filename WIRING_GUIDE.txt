@@ -1,0 +1,121 @@
+# Visual Wiring Guide
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MACH4 CNC CONTROLLER                         │
+│                  (Breakout Board / Motion Card)                 │
+│                                                                 │
+│   Output 1 ──────────┐                                         │
+│   Output 2 ──────────┼────────┐                                │
+│   Output 3 ──────────┼────────┼────────┐                       │
+│   GND ───────────────┼────────┼────────┼────────┐              │
+│                      │        │        │        │              │
+└──────────────────────┼────────┼────────┼────────┼──────────────┘
+                       │        │        │        │
+                       │        │        │        │
+                       ▼        ▼        ▼        ▼
+              ┌────────────────────────────────────────┐
+              │         ARDUINO MINI / NANO            │
+              │                                        │
+              │  Pin 2 ◄── (Bit 0 - LSB)              │
+              │  Pin 3 ◄── (Bit 1)                    │
+              │  Pin 4 ◄── (Bit 2 - MSB)              │
+              │  GND   ◄── Common Ground (CRITICAL!)   │
+              │                                        │
+              │  Pin 6 ────┐                          │
+              │  5V* ───────┼────┐                    │
+              │  GND ───────┼────┼────┐               │
+              └─────────────┼────┼────┼───────────────┘
+                            │    │    │
+                            ▼    ▼    ▼
+                   ┌────────────────────────┐
+                   │   WS2812B LED STRIP    │
+                   │                        │
+                   │  DIN  ◄── Data         │
+                   │  VCC  ◄── 5V Power*    │
+                   │  GND  ◄── Ground       │
+                   └────────────────────────┘
+
+* For 20+ LEDs, use external 5V power supply
+  Connect: External 5V → LED VCC
+          External GND → LED GND AND Arduino GND
+```
+
+## State Encoding Quick Reference
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  OUTPUT STATES → LED COLORS                                      ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Out3  Out2  Out1  │  Decimal  │  State      │  LED Display     ║
+║  (Pin4)(Pin3)(Pin2)│           │             │                  ║
+╠════════════════════╪═══════════╪═════════════╪══════════════════╣
+║   0     0     0    │     0     │  Off        │  Black           ║
+║   0     0     1    │     1     │  Idle       │  Green           ║
+║   0     1     0    │     2     │  Running    │  Blue (chase)    ║
+║   0     1     1    │     3     │  Paused     │  Yellow (pulse)  ║
+║   1     0     0    │     4     │  Error      │  Red (blink)     ║
+║   1     0     1    │     5     │  Homing     │  Orange (chase)  ║
+║   1     1     0    │     6     │  Tool Chg   │  Magenta (pulse) ║
+║   1     1     1    │     7     │  ⚠️ E-STOP  │  RED/WHITE STROBE║
+╠══════════════════════════════════════════════════════════════════╣
+║  PRIORITY: E-STOP (7) overrides ALL other states!               ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+## Power Supply Guidelines
+
+```
+Number of LEDs    Arduino 5V OK?    External Supply
+──────────────────────────────────────────────────
+    1-20              ✓ Yes         Optional
+   21-60              ✗ No          Required 5V 2A
+   61-144             ✗ No          Required 5V 4A
+  145-300             ✗ No          Required 5V 6A
+  300+                ✗ No          Required 5V 10A+
+
+Calculation: Each LED draws ~60mA at full white
+Total current = (Number of LEDs × 0.06A)
+Add 20% safety margin for power supply sizing
+```
+
+## Common Ground Importance
+
+```
+❌ WRONG - No Common Ground:
+   Mach4 outputs "float" at unknown voltage
+   Arduino reads garbage values
+   LEDs do random things or don't work
+
+✓ CORRECT - Common Ground:
+   Mach4 GND ──┬── Arduino GND
+               └── LED Power GND (if external)
+   
+   Signals have proper voltage reference
+   Digital signals read correctly
+   System works reliably
+```
+
+## E-Stop Visual Warning System
+
+```
+⚠️  EMERGENCY STOP BEHAVIOR:
+
+When E-Stop is pressed:
+┌────────────────────────────────────────────────┐
+│  ALL THREE OUTPUTS GO HIGH (111 binary = 7)   │
+│  LEDs IMMEDIATELY STROBE RED/WHITE             │
+│  Pattern: █ RED █ WHITE █ RED █ WHITE █        │
+│  Update: Every 150ms for maximum visibility   │
+│  OVERRIDES: All other states - highest priority│
+└────────────────────────────────────────────────┘
+
+Visual Priority:
+1. E-STOP (Red/White Strobe) ← ALWAYS WINS
+2. Error (Red Blink)
+3. All other states
+
+This provides immediate visual feedback that the
+machine is in emergency stop, even from across
+the shop floor.
+```
