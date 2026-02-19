@@ -135,7 +135,7 @@ void readInputs() {
   uint8_t bit2 = digitalRead(INPUT_BIT2) ? 1 : 0;
 
 
-  uint8_t newMode = bit0 | bit1 << 1 | bit2 << 2;
+  uint8_t newMode = bit0 | bit1 << 1 | bit2 << 2 & 7;
 
   // Update mode if changed
   if (newMode != currentMode) {
@@ -213,15 +213,14 @@ void chase(Color color) {
   fadeToBlackBy(leds, NUM_LEDS, 64);
   
   uint8_t pos = animationStep % NUM_LEDS;
- /*
-  leds[pos] = CRGB(color.r, color.g, color.b);
-  leds[pos] = CRGB(color.r, color.g, color.b);
- */
+
   leds[(pos - 1 + NUM_LEDS) % NUM_LEDS] = CRGB(color.r/2, color.g/2, color.b/2);
   leds[(pos - 2 + NUM_LEDS) % NUM_LEDS] = CRGB(color.r/4, color.g/4, color.b/4);
+  leds[(pos - 3 + NUM_LEDS) % NUM_LEDS] = CRGB(color.r/8, color.g/8, color.b/8);
   // Add trailing LEDs
   if (pos > 0) leds[pos - 1] = CRGB(color.r / 2, color.g / 2, color.b / 2);
   if (pos > 1) leds[pos - 2] = CRGB(color.r / 4, color.g / 4, color.b / 4);
+  if (pos > 2) leds[pos - 3] = CRGB(color.r / 8, color.g / 8, color.b / 8);
 }
 
 void pulse(Color color) {
