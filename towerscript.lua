@@ -2,14 +2,16 @@
     Mach4 CNC RGB LED Control Script
     Controls addressable RGB LEDs via Arduino Mini
     Communication via 3 digital outputs (3-bit binary encoding)
+	Put this script in your Modules directory and then Edit your screen to add the following  4 lines to your PLC
+	
 	
 	if towerscript == nil then
 		towerscript = require "towerscript" 
 	end
 
 	towerscript.PLCScript()
+	
 --]]
-
 local towerscript = {}
 -- Configuration
 -- Define which outputs to use (change these to match your setup)
@@ -85,7 +87,7 @@ end
 -- PLC Script - Monitor machine state and update LEDs
 function towerscript.PLCScript()
     local inst = mc.mcGetInstance()
-    
+	
     -- Get machine state
     local state,rc = mc.mcCntlGetState(inst)
     
@@ -106,12 +108,21 @@ function towerscript.PLCScript()
 	local isRunning = mc.mcSignalGetState(mc.mcSignalGetHandle(inst, mc.OSIG_RUNNING_GCODE))
 
     -- Check if machine is homing
-    local isHoming = 0
-		  isHoming =                      mc.mcAxisIsHoming(inst, mc.X_AXIS) 
-          isHoming = isHoming +           mc.mcAxisIsHoming(inst, mc.Y_AXIS)
-          isHoming = isHoming +           mc.mcAxisIsHoming(inst, mc.Z_AXIS)
-		  isHoming = isHoming +           mc.mcAxisIsHoming(inst, mc.A_AXIS)
-					 
+   local isHoming = mc.mcAxisIsHoming(inst, mc.X_AXIS)
+		 isHoming = isHoming + mc.mcAxisIsHoming(inst, mc.Y_AXIS)
+		 isHoming = isHoming + mc.mcAxisIsHoming(inst, mc.Z_AXIS)
+		 isHoming = isHoming + mc.mcAxisIsHoming(inst, mc.A_AXIS)
+--	local isHoming, i
+--	for i=0, 11 do 
+--		local h
+--		local rc
+--		h, rc = mc.mcAxisIsHoming(inst, i)
+--		isHoming= isHoming + h
+--	end
+	if (isHoming ~= 0) then
+		isHoming = 1
+	end
+	
     -- Check for E-Stop (HIGHEST PRIORITY)
     local estopActive,rc = mc.mcSignalGetState(mc.mcSignalGetHandle(inst, mc.ISIG_EMERGENCY))
 
@@ -149,7 +160,12 @@ function towerscript.PLCScript()
     else
         newState = LED_OFF
     end
-    
+	
+    if (newState == lastState) then
+		return
+	end
+	lastState = newState
+	
     -- Update LED state only if changed
     SetLEDState(newState)
 end
@@ -181,13 +197,12 @@ function ScriptUnload()
     SetLEDState(LED_OFF)
 end
 
- InitializeOutputs()
+InitializeOutputs()
  
  
 if (mc.mcInEditor() == 1) then
 	towerscript.PLCScript()
 end
 
-
- return towerscript
+return towerscript
  
