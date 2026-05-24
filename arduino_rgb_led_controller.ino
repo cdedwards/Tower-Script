@@ -20,7 +20,7 @@
 #define NUM_LEDS    144
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
-#define BRIGHTNESS  20
+#define BRIGHTNESS  255
 
 // Input pins from Mach4 (3-bit binary)
 #define INPUT_BIT0  2  // LSB
@@ -67,17 +67,15 @@ const uint8_t modePatterns[8] = {
   4   // MODE_ESTOP - Strobe (red/white flash) - MAXIMUM ATTENTION!
 };
 
-#if 0
-typedef void solidColor(Color);
-typedef void chase(Color);
-typedef void pulse(Color);
-typedef void blink(Color);
-typedef void strobe(Color);
+
+ void solidColor(Color c);
+ void chase(Color c);
+ void pulse(Color c);
+ void blink(Color c);
+ void strobe(Color c);
 
 typedef void (*PatternFunc)(Color);
-const PatternFunc patternFunctions[] = { solidColor, chase, pulse, blink, strobe };
-#endif 
-
+const PatternFunc patternFunctions[] = { solidColor, chase, pulse, blink, strobe, solidColor };
 
 // Pattern types
 #define PATTERN_SOLID     0
@@ -97,6 +95,7 @@ uint8_t currentMode = MODE_OFF;
 unsigned long lastUpdate = 0;
 uint8_t animationStep = 0;
 uint8_t hue = 0;
+uint8_t lastMode = -1;
 
 void setup() {
   Serial.begin(115200);
@@ -120,29 +119,34 @@ void setup() {
 }
 
 void loop() {
+  uint8_t newMode;
+
   // Read the 3-bit input from Mach4
-  readInputs();
-  
+  newMode = readInputs();
+  //if (newMode != currentMode)
+   // return;
   // Update LED animation
   updateLEDs();
   
 }
 
 // Read 3-bit binary input and decode to mode
-void readInputs() {
+uint8_t readInputs() {
   uint8_t bit0 = digitalRead(INPUT_BIT0) ? 1 : 0;
   uint8_t bit1 = digitalRead(INPUT_BIT1) ? 1 : 0;
   uint8_t bit2 = digitalRead(INPUT_BIT2) ? 1 : 0;
 
 
-  uint8_t newMode = bit0 | bit1 << 1 | bit2 << 2 & 7;
+  uint8_t newMode = (bit0 | (bit1 << 1) | (bit2 << 2 )) & 7;
 
   // Update mode if changed
   if (newMode != currentMode) {
 
     currentMode = newMode;
     animationStep = 0;  // Reset animation when mode changes
+
   }
+  return newMode;
 }
 
 void updateLEDs() {
@@ -177,29 +181,9 @@ void updateLEDs() {
     return;
   }
   lastUpdate = currentTime;
-  
-  // Apply pattern with current mode's color
-  switch (pattern) {
-    case PATTERN_SOLID:
-      solidColor(color);
-      break;
-    case PATTERN_CHASE:
-      chase(color);
-      break;
-    case PATTERN_PULSE:
-      pulse(color);
-      break;
-    case PATTERN_BLINK:
-      blink(color);
-      break;
-    case PATTERN_STROBE:
-      strobe(color);  // E-Stop warning strobe
-      break;
-    default:
-      solidColor(color);
-      break;
-  }
-  
+
+  patternFunctions[pattern](color);
+
   FastLED.show();
   animationStep++;
 }
